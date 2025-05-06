@@ -1,0 +1,48 @@
+name: composecraft
+services:
+  server:
+    image: composecraft/composecraft:latest
+    container_name: Compose-Craft
+    hostname: composecraft-server
+    restart: always
+    pull_policy: always
+    ports:
+      - '127.0.0.1:58003:3000'
+    environment:
+      - CORE_ONLY=true
+      - URL=https://${BASE_HOST_NAME:-localhost}
+      - MONGODB_URI=mongodb://composecraft:composecraft@db
+      - SECRET_KEY=dOxZYTTZgXKMHkqLBIQVImayQXAVWdzGBPuFJKggzcgvgPJPXpWzqzKaUOIOGGIr
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z 127.0.0.1 3000|| exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    depends_on:
+      - db
+    networks:
+      - composecraft
+
+  db:
+    image: mongo:4.4
+    container_name: composecraft-db
+    restart: always
+    pull_policy: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=composecraft
+      - MONGO_INITDB_ROOT_PASSWORD=composecraft
+    volumes:
+      - /var/lib/srv/$USER/docker/composecraft/composecraft/latest/rootfs/data/db/mongo:/data/db:rw
+    healthcheck:
+      test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - composecraft
+
+networks:
+  composecraft:
+    name: composecraft
+    external: false
