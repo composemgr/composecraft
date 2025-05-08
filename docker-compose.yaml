@@ -1,18 +1,28 @@
+# nginx proxy address - http://172.17.0.1:58003
+
 name: composecraft
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
 services:
   server:
     image: composecraft/composecraft:latest
     container_name: Compose-Craft
-    hostname: composecraft-server
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
     pull_policy: always
+    logging: *default-logging
+    environment:
+      - CORE_ONLY=false
+      - TZ=${TZ:-America/New_York}
+      - URL=https://${BASE_HOST_NAME:-$HOSTNAME}
+      - SECRET_KEY=${APP_JWT_TOKEN:-aRJu0x2XaOGR2X3xR9V2xQgPwBlBii8H}
+      - MONGODB_URI=mongodb://composecraft:LaV0m2OH4AJNwFJHpCaua1o9tCTktCDS@db
     ports:
       - '127.0.0.1:58003:3000'
-    environment:
-      - CORE_ONLY=true
-      - URL=https://${BASE_HOST_NAME:-localhost}
-      - MONGODB_URI=mongodb://composecraft:composecraft@db
-      - SECRET_KEY=dOxZYTTZgXKMHkqLBIQVImayQXAVWdzGBPuFJKggzcgvgPJPXpWzqzKaUOIOGGIr
     healthcheck:
       test: ['CMD-SHELL', 'nc -z 127.0.0.1 3000|| exit 1']
       interval: 10s
@@ -20,7 +30,8 @@ services:
       retries: 3
       start_period: 90s
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - composecraft
 
@@ -29,16 +40,19 @@ services:
     container_name: composecraft-db
     restart: always
     pull_policy: always
+    logging: *default-logging
     environment:
+      - TZ=${TZ:-America/New_York}
       - MONGO_INITDB_ROOT_USERNAME=composecraft
-      - MONGO_INITDB_ROOT_PASSWORD=composecraft
+      - MONGO_INITDB_ROOT_PASSWORD=LaV0m2OH4AJNwFJHpCaua1o9tCTktCDS
     volumes:
-      - /var/lib/srv/$USER/docker/composecraft/composecraft/latest/rootfs/data/db/mongo:/data/db:rw
+      - /var/lib/srv/$USER/docker/db/mongo/composecraft:/data/db
     healthcheck:
-      test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet
+      test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet||exit 1
       interval: 10s
       timeout: 10s
       retries: 5
+      start_period: 10s
     networks:
       - composecraft
 
