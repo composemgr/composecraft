@@ -8,9 +8,9 @@ x-logging: &default-logging
   driver: json-file
 
 services:
-  server:
+  app:
     image: composecraft/composecraft:latest
-    container_name: Compose-Craft
+    container_name: composecraft-app
     hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
     pull_policy: always
@@ -46,7 +46,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=composecraft
       - MONGO_INITDB_ROOT_PASSWORD=LaV0m2OH4AJNwFJHpCaua1o9tCTktCDS
     volumes:
-      - /var/lib/srv/$USER/docker/db/mongo/composecraft:/data/db
+      - '/var/lib/srv/$USER/databases/mongo/composecraft:/data/db'
     healthcheck:
       test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet||exit 1
       interval: 10s
