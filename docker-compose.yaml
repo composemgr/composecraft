@@ -1,0 +1,62 @@
+# nginx proxy address - http://172.17.0.1:58003
+
+name: composecraft
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: composecraft/composecraft:latest
+    container_name: composecraft-app
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CORE_ONLY: false
+      URL: https://${BASE_HOST_NAME:-$HOSTNAME}
+      SECRET_KEY: ${APP_JWT_TOKEN:-changeme_secret_key_min_32_chars}
+      MONGODB_URI: mongodb://composecraft:${DB_ADMIN_PASS:-LaV0m2OH4AJNwFJHpCaua1o9tCTktCDS}@db
+    ports:
+      - '172.17.0.1:58003:3000'
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - composecraft
+
+  db:
+    image: mongo:4.4
+    container_name: composecraft-db
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      MONGO_INITDB_ROOT_USERNAME: ${DB_ADMIN_NAME:-composecraft}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_ADMIN_PASS:-LaV0m2OH4AJNwFJHpCaua1o9tCTktCDS}
+    volumes:
+      - './rootfs/db/mongodb/composecraft:/data/db'
+    healthcheck:
+      test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet||exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - composecraft
+
+networks:
+  composecraft:
+    name: composecraft
+    external: false
