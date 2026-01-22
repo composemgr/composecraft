@@ -46,7 +46,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${DB_ADMIN_NAME:-composecraft}
       MONGO_INITDB_ROOT_PASSWORD: ${DB_ADMIN_PASS:-LaV0m2OH4AJNwFJHpCaua1o9tCTktCDS}
     volumes:
-      - './rootfs/db/mongodb/composecraft:/data/db'
+      - './rootfs/data/db/mongodb/composecraft:/data/db'
     healthcheck:
       test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet||exit 1
       interval: 10s
