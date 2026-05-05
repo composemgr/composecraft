@@ -52,7 +52,7 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/db/mongodb/composecraft` - Data storage
+- `./volumes/data/db/mongodb/composecraft` - Data storage
 
 ## 🔐 Security
 
