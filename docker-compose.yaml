@@ -18,9 +18,9 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
       CORE_ONLY: false
-      URL: https://${BASE_HOST_NAME:-$HOSTNAME}
-      SECRET_KEY: ${APP_JWT_TOKEN:-changeme_secret_key_min_32_chars}
-      MONGODB_URI: mongodb://composecraft:${DB_ADMIN_PASS:-LaV0m2OH4AJNwFJHpCaua1o9tCTktCDS}@db
+      URL: https://${BASE_HOST_NAME:-localhost}
+      SECRET_KEY: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
+      MONGODB_URI: mongodb://${DB_ADMIN_NAME:-composecraft}:${DB_ADMIN_PASS:-changeme_admin_password}@composecraft-db
     ports:
       - '172.17.0.1:58003:3000'
     healthcheck:
@@ -36,19 +36,20 @@ services:
       - composecraft
 
   db:
-    image: mongo:4.4
+    image: mongo:latest
     container_name: composecraft-db
+    hostname: composecraft-db
     restart: always
     pull_policy: always
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
       MONGO_INITDB_ROOT_USERNAME: ${DB_ADMIN_NAME:-composecraft}
-      MONGO_INITDB_ROOT_PASSWORD: ${DB_ADMIN_PASS:-LaV0m2OH4AJNwFJHpCaua1o9tCTktCDS}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_ADMIN_PASS:-changeme_admin_password}
     volumes:
       - './volumes/data/db/mongodb/composecraft:/data/db'
     healthcheck:
-      test: echo 'db.stats().ok' | mongo localhost:27017/test --quiet||exit 1
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand(\"ping\").ok' || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 5
