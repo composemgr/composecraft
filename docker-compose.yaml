@@ -21,6 +21,8 @@ services:
       URL: https://${BASE_HOST_NAME:-localhost}
       SECRET_KEY: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
       MONGODB_URI: mongodb://${DB_ADMIN_NAME:-composecraft}:${DB_ADMIN_PASS:-changeme_admin_password}@composecraft-db
+      CONTAINER_NAME: composecraft-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     ports:
       - '172.17.0.1:58003:3000'
     healthcheck:
@@ -34,6 +36,24 @@ services:
         condition: service_healthy
     networks:
       - composecraft
+      - proxy
+      - cloudflare
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://composecraft-app:3000'
+      - 'cloudflare.hostname=composecraft.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.composecraft-app.entrypoints=http'
+      - 'traefik.http.routers.composecraft-app-secure.tls=true'
+      - 'traefik.http.routers.composecraft-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.composecraft-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.composecraft-app.middlewares=composecraft-app-https-redirect'
+      - 'traefik.http.routers.composecraft-app-secure.entrypoints=https'
+      - 'traefik.http.routers.composecraft-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.composecraft-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.composecraft-app-secure.service=composecraft-app'
+      - 'traefik.http.services.composecraft-app.loadbalancer.server.port=3000'
 
   db:
     image: mongo:latest
@@ -46,6 +66,7 @@ services:
       TZ: ${TZ:-America/New_York}
       MONGO_INITDB_ROOT_USERNAME: ${DB_ADMIN_NAME:-composecraft}
       MONGO_INITDB_ROOT_PASSWORD: ${DB_ADMIN_PASS:-changeme_admin_password}
+      CONTAINER_NAME: composecraft-db
     volumes:
       - './volumes/data/db/mongodb/composecraft:/data/db'
     healthcheck:
@@ -61,3 +82,7 @@ networks:
   composecraft:
     name: composecraft
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
